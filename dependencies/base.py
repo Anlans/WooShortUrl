@@ -4,6 +4,7 @@ from typing import AsyncGenerator
 from database.database import SessionLocal
 
 
+# AsyncGenerator 异步生成器,
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     db = SessionLocal()
     try:
