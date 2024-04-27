@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, BackgroundTasks, status, HTTPException
+from fastapi import APIRouter, Depends, BackgroundTasks, status, HTTPException, Query
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,6 +62,30 @@ async def short_redirect(*, short_tag: str,
     data.visits_count += 1
     task.add_task(ShortService.update_short_url, db_session, short_url_id=data.id, visits_count=data.visits_count)
     return RedirectResponse(url=data.long_url)
+
+
+@router_short.post("/custom_short_url", summary="自定义短链")
+async def custom_short_url(create_info: SingleShortUrlCreate, db_session: AsyncSession = Depends(get_db_session)):
+    response = await ShortService.verify_custom_short_url(db_session, create_info.short_tag)
+    if response:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="该短链已存在，请更换")
+    else:
+        logger.info("可以创建该自定义短链")
+        create_info.short_url = f"{create_info.short_url}{create_info.short_tag}"
+        if not (create_info.long_url.startswith("http://") or create_info.long_url.startswith("https://")):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="长链接需以'https://'或'http://'开头")
+        create_info.msg_context = f"{create_info.msg_context}, 了解详情请点击{create_info.short_url}"
+
+        result = await ShortService.create_short_url(db_session, **create_info.dict())
+
+        return {
+            "status_code": 100,
+            "msg": "自定义短链创建成功",
+            "data": {
+                "short_url": result.short_url
+            }
+        }
+
 
 
 

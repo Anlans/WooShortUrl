@@ -18,6 +18,13 @@ class ShortService:
         await async_session.commit()
         return new_short_url
 
+    # @staticmethod
+    # async def create_custom_short_url(async_session: AsyncSession, **kwargs):
+    #     new_short_url = ShortUrl(**kwargs)
+    #     async_session.add(new_short_url)
+    #     await async_session.commit()
+    #     return new_short_url
+
     @staticmethod
     async def get_short_url(async_session: AsyncSession, short_tag: str):
         result = await async_session.execute(select(ShortUrl).where(ShortUrl.short_tag == short_tag))
@@ -47,8 +54,21 @@ class ShortService:
     async def set_key_with_expiration(key, value="exists"):
         try:
             redis = await sys_cache()
-            expired_at = int(timedelta(days=3).total_seconds())
+            expired_at = int(timedelta(days=1).total_seconds())
             await redis.set(key, value, ex=expired_at)
             logger.info(f"Key {key} set with expiration of {expired_at} seconds.")
         except Exception as e:
             logger.error(f"Failed to set key in Redis: {str(e)}")
+
+    @staticmethod
+    async def verify_custom_short_url(async_session: AsyncSession, tag: str) -> bool:
+        # 使用提供的标签来查询数据库
+        result = await async_session.execute(select(ShortUrl).where(ShortUrl.short_tag == tag))
+        # 提取查询结果的第一条记录
+        short_url_instance = result.scalars().first()
+        logger.info(f"short_url_instance: {short_url_instance}")
+        # 如果查询结果为空，则返回 False（标签不存在，可用）
+        # 如果查询结果不为空，则返回 True（标签已存在，不可用）
+        return short_url_instance is not None
+
+
