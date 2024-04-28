@@ -71,4 +71,26 @@ class ShortService:
         # 如果查询结果不为空，则返回 True（标签已存在，不可用）
         return short_url_instance is not None
 
+    @staticmethod
+    async def get_all_short_url_page(async_session: AsyncSession,
+                                     last_seen_id: int,
+                                     page_size: int) -> dict:
+        if last_seen_id is not None:
+            query = select(ShortUrl).where(ShortUrl.id > last_seen_id).order_by(ShortUrl.id).limit(page_size)
+        else:
+            query = select(ShortUrl).order_by(ShortUrl.id).limit(page_size)
+
+        result = await async_session.execute(query)
+        if not result:
+            raise PlainTextResponse("在short表中一条记录都没有查询到")
+        items = result.scalars().all()
+
+        next_last_seen_id = items[-1].id if items else None
+
+        return {
+            "items": items,
+            "next_last_seen_id": next_last_seen_id
+        }
+
+
 

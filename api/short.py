@@ -86,7 +86,11 @@ async def custom_short_url(create_info: SingleShortUrlCreate, db_session: AsyncS
             }
         }
 
-
-
-
-
+@router_short.get("/get_all_short_urls_use_page/")
+async def get_all_short_urls_use_page(last_seen_id: int = Query(None, description="不填默认为0"),
+                                      page_size: int = Query(10, ge=1, description="每次取十个记录，默认大于1"),
+                                      db_session: AsyncSession = Depends(get_db_session)):
+    items_all = await ShortService.get_all_short_url_page(db_session, last_seen_id, page_size)
+    if items_all is None:
+        raise HTTPException(status=status.HTTP_404_NOT_FOUND, detail="啥都没查到")
+    return items_all
