@@ -3,7 +3,10 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from config.config import get_settings
 
 # 创建引擎对象
-async_engine = create_async_engine(get_settings().ASYNC_DATABASE_URL, echo=True)
+async_engine = create_async_engine(
+    get_settings().ASYNC_DATABASE_URL,
+    echo=True
+)
 
 # 创建模型基类
 Base = declarative_base()
